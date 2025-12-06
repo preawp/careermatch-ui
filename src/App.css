@@ -738,7 +738,136 @@ body {
   cursor: not-allowed;
 }
 
-/* Category Filter */
+/* New Filter Design */
+.jobs-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-group--limit {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.filter-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.filter-group-header svg {
+  opacity: 0.7;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-pills--compact {
+  gap: 6px;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-light);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  color: var(--text);
+  border-color: var(--text-light);
+  background: var(--bg-card);
+  transform: translateY(-1px);
+}
+
+.filter-pill--active {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.filter-pill--active:hover {
+  color: white;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.filter-pill--recommended {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.filter-pill--recommended:not(.filter-pill--active):hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: var(--success);
+}
+
+.filter-pill--small {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  border-radius: 16px;
+}
+
+.filter-pill-confidence {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  opacity: 0.8;
+}
+
+.filter-pill--active .filter-pill-confidence {
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+}
+
+.filter-pill-star {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.filter-pill--active .filter-pill-star {
+  color: #fbbf24;
+}
+
+.filter-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Category Filter (legacy) */
 .jobs-filter--category {
   flex-direction: column;
   align-items: flex-start;
