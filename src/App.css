@@ -867,6 +867,42 @@ body {
   transform: none;
 }
 
+/* Category Badges (display only) */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-light);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.category-badge--primary {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: var(--success);
+}
+
+.category-badge-confidence {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  opacity: 0.8;
+}
+
+.category-badge--primary .category-badge-confidence {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success);
+  opacity: 1;
+}
+
 /* Category Filter (legacy) */
 .jobs-filter--category {
   flex-direction: column;

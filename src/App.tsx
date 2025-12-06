@@ -7,7 +7,7 @@ import { Toast, ThemeToggle } from "./components";
 import { UploadView, ResultsView } from "./views";
 import { useTheme } from "./hooks/useTheme";
 import type { ResumeSections } from "./types/resume";
-import type { Job } from "./types/job";
+import type { Job, CategoryMatch } from "./types/job";
 
 interface ToastState {
   message: string;
@@ -23,6 +23,8 @@ function App() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [jobsError, setJobsError] = useState<string | null>(null);
   const [jobLimit, setJobLimit] = useState<number>(10);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [recommendedCategories, setRecommendedCategories] = useState<CategoryMatch[]>([]);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = useCallback(
@@ -69,6 +71,10 @@ function App() {
       try {
         const jobsResponse = await fetchMatchingJobs(resumeFile, jobLimit);
         setJobs(jobsResponse.jobs ?? []);
+        // Store recommended categories for display
+        if (jobsResponse.categories && jobsResponse.categories.length > 0) {
+          setRecommendedCategories(jobsResponse.categories);
+        }
       } catch (jobError) {
         console.error("Failed to fetch jobs:", jobError);
         setJobs([]);
@@ -109,6 +115,7 @@ function App() {
     setSections(null);
     setJobs([]);
     setJobsError(null);
+    setRecommendedCategories([]);
   };
 
   const fetchJobs = useCallback(async (limit: number) => {
@@ -186,6 +193,7 @@ function App() {
           isLoadingJobs={isLoadingJobs}
           jobsError={jobsError}
           jobLimit={jobLimit}
+          recommendedCategories={recommendedCategories}
           onJobLimitChange={handleJobLimitChange}
           onRetryJobs={handleRetryJobs}
           onUploadNew={handleUploadNew}
