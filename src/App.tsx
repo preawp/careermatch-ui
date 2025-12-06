@@ -1,310 +1,209 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import "./App.css";
 
-type Category =
-  | "Software Engineering"
-  | "Data Science"
-  | "Product / Project"
-  | "Marketing"
-  | "Social Media"
-  | "Design";
+import { parseResume } from "./api/resume";
+import { fetchMatchingJobs } from "./api/jobs";
+import { Toast, ThemeToggle } from "./components";
+import { UploadView, ResultsView } from "./views";
+import { useTheme } from "./hooks/useTheme";
+import type { ResumeSections } from "./types/resume";
+import type { Job } from "./types/job";
 
-interface Job {
-  id: number;
-  title: string;
-  company: string;
-  category: Category;
-  location: string;
-  matchScore: number;
+interface ToastState {
+  message: string;
+  type: "error" | "success" | "info";
 }
-
-interface ResumeAnalysis {
-  contact: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  sections: {
-    education: {
-      degree: string;
-      major: string;
-      institution: string;
-      date: string;
-    }[];
-  };
-  classification: {
-    category: string;
-    confidence: number;
-  };
-  metadata: {
-    word_count: number;
-    processing_time_ms: number;
-  };
-}
-
-const ALL_CATEGORIES: Category[] = [
-  "Software Engineering",
-  "Data Science",
-  "Product / Project",
-  "Marketing",
-  "Social Media",
-  "Design",
-];
-
-const MOCK_JOBS: Job[] = [
-  {
-    id: 1,
-    title: "Junior Software Engineer",
-    company: "TechNova",
-    category: "Software Engineering",
-    location: "San Francisco, CA",
-    matchScore: 88,
-  },
-  {
-    id: 2,
-    title: "Frontend Developer Intern",
-    company: "Bright Labs",
-    category: "Software Engineering",
-    location: "Remote",
-    matchScore: 82,
-  },
-  {
-    id: 3,
-    title: "Data Analyst Intern",
-    company: "Insightly",
-    category: "Data Science",
-    location: "New York, NY",
-    matchScore: 79,
-  },
-  {
-    id: 4,
-    title: "Product Management Intern",
-    company: "Aurora Apps",
-    category: "Product / Project",
-    location: "Remote",
-    matchScore: 84,
-  },
-  {
-    id: 5,
-    title: "Social Media Coordinator",
-    company: "Vibe Studio",
-    category: "Social Media",
-    location: "Los Angeles, CA",
-    matchScore: 90,
-  },
-  {
-    id: 6,
-    title: "Marketing Assistant",
-    company: "Northwind Co.",
-    category: "Marketing",
-    location: "Chicago, IL",
-    matchScore: 76,
-  },
-  {
-    id: 7,
-    title: "UX / UI Design Intern",
-    company: "PixelCraft",
-    category: "Design",
-    location: "Remote",
-    matchScore: 81,
-  },
-];
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [sections, setSections] = useState<ResumeSections | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [jobLimit, setJobLimit] = useState<number>(10);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
-  function toggleCategory(cat: Category) {
-    setSelectedCategories((prev) => {
-      if (prev.includes(cat)) return prev.filter((c) => c !== cat);
-      if (prev.length >= 3) return prev;
-      return [...prev, cat];
-    });
-  }
+  const showToast = useCallback(
+    (message: string, type: ToastState["type"] = "error") => {
+      setToast({ message, type });
+    },
+    []
+  );
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const dismissToast = useCallback(() => setToast(null), []);
 
-    if (!resumeFile || selectedCategories.length === 0) return;
+  const hasResults = useMemo(() => {
+    if (!sections) return false;
+    const { education, experience, projects, publications, contact, skills } = sections;
+    const hasList = [education, experience, projects, publications, skills].some(
+      (items) => Array.isArray(items) && items.length > 0
+    );
+    const hasContact = contact
+      ? Object.values(contact).some((value) => Boolean(value))
+      : false;
+    return hasList || hasContact;
+  }, [sections]);
 
-    setAnalysis({
-      contact: {
-        name: "Pratik Pujari",
-        email: "pratikpujari1000@gmail.com",
-        phone: "+1 303 6206112",
-      },
-      sections: {
-        education: [
-          {
-            degree: "Master of Science",
-            major: "Computer Science",
-            institution: "University of Colorado Boulder",
-            date: "Aug. 2025",
-          },
-        ],
-      },
-      classification: {
-        category: "HEALTHCARE",
-        confidence: 0.37,
-      },
-      metadata: {
-        word_count: 511,
-        processing_time_ms: 12251,
-      },
-    });
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-    const res = MOCK_JOBS
-      .filter((job) => selectedCategories.includes(job.category))
-      .sort((a, b) => b.matchScore - a.matchScore);
+    if (!resumeFile) {
+      showToast("Please add a resume file first.", "error");
+      return;
+    }
 
-    setJobs(res);
-    setHasSearched(true);
-  }
+    setIsLoading(true);
+    setToast(null);
 
-  const topEducation =
-    analysis?.sections.education && analysis.sections.education[0];
+    try {
+      // Parse resume
+      const payload = await parseResume(resumeFile);
+      setSections(payload.sections ?? null);
+      showToast("Resume parsed successfully!", "success");
+
+      // Fetch matching jobs
+      setIsLoadingJobs(true);
+      setJobsError(null);
+      try {
+        const jobsResponse = await fetchMatchingJobs(resumeFile, jobLimit);
+        setJobs(jobsResponse.jobs ?? []);
+      } catch (jobError) {
+        console.error("Failed to fetch jobs:", jobError);
+        setJobs([]);
+        setJobsError(
+          jobError instanceof Error
+            ? jobError.message
+            : "Failed to fetch matching jobs. Please try again."
+        );
+      } finally {
+        setIsLoadingJobs(false);
+      }
+    } catch (error) {
+      console.error(error);
+      setSections(null);
+      setJobs([]);
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while parsing your resume.",
+        "error"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setResumeFile(file);
+  };
+
+  const handleFileRemove = () => {
+    setResumeFile(null);
+  };
+
+  const handleUploadNew = () => {
+    setResumeFile(null);
+    setSections(null);
+    setJobs([]);
+    setJobsError(null);
+  };
+
+  const fetchJobs = useCallback(async (limit: number) => {
+    if (!resumeFile) return;
+
+    setIsLoadingJobs(true);
+    setJobsError(null);
+    try {
+      const jobsResponse = await fetchMatchingJobs(resumeFile, limit);
+      setJobs(jobsResponse.jobs ?? []);
+    } catch (jobError) {
+      console.error("Failed to fetch jobs:", jobError);
+      setJobs([]);
+      setJobsError(
+        jobError instanceof Error
+          ? jobError.message
+          : "Failed to fetch matching jobs. Please try again."
+      );
+    } finally {
+      setIsLoadingJobs(false);
+    }
+  }, [resumeFile]);
+
+  const handleRetryJobs = useCallback(() => {
+    fetchJobs(jobLimit);
+  }, [fetchJobs, jobLimit]);
+
+  const handleJobLimitChange = useCallback((newLimit: number) => {
+    setJobLimit(newLimit);
+    fetchJobs(newLimit);
+  }, [fetchJobs]);
 
   return (
-    <div className="page">
+    <div className="app">
+      {/* Header */}
       <header className="header">
-        <h1 className="app-title">CareerMatch AI</h1>
-        <p className="app-subtitle">
-          Upload your resume, choose what you’re interested in, and see jobs you
-          might be qualified for.
-        </p>
+        <div className="header-inner">
+          <a href="/" className="logo">
+            <div className="logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14,2 14,8 20,8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            </div>
+            CareerMatch
+          </a>
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        </div>
       </header>
 
-      <main className="layout">
-        <section className="card">
-          <h2 className="card-title">1. Add your info</h2>
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={dismissToast}
+        />
+      )}
 
-          <form onSubmit={handleSubmit} className="form">
-            <div className="form-group">
-              <label className="label">Resume file</label>
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setResumeFile(e.target.files[0]);
-                  }
-                }}
-              />
-              {resumeFile && (
-                <p className="helper-text">Selected: {resumeFile.name}</p>
-              )}
-            </div>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+          <p>Analyzing your resume...</p>
+        </div>
+      )}
 
-            <div className="form-group">
-              <label className="label">
-                Top 3 categories you’re interested in
-              </label>
-              <p className="helper-text">
-                Pick up to 3. This helps us know what kind of roles to show.
-              </p>
+      {/* Main Content */}
+      {hasResults && sections ? (
+        <ResultsView
+          sections={sections}
+          jobs={jobs}
+          isLoadingJobs={isLoadingJobs}
+          jobsError={jobsError}
+          jobLimit={jobLimit}
+          onJobLimitChange={handleJobLimitChange}
+          onRetryJobs={handleRetryJobs}
+          onUploadNew={handleUploadNew}
+        />
+      ) : (
+        <UploadView
+          resumeFile={resumeFile}
+          isLoading={isLoading}
+          onFileChange={handleFileChange}
+          onFileRemove={handleFileRemove}
+          onSubmit={handleSubmit}
+        />
+      )}
 
-              <div className="category-grid">
-                {ALL_CATEGORIES.map((cat) => {
-                  const active = selectedCategories.includes(cat);
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      className={
-                        "category-pill" + (active ? " category-pill--active" : "")
-                      }
-                      onClick={() => toggleCategory(cat)}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button type="submit" className="primary-btn">
-              Find matching jobs
-            </button>
-          </form>
-        </section>
-
-        <section className="card">
-          {analysis && (
-            <>
-              <h2 className="card-title">Resume summary</h2>
-
-              <div className="resume-summary">
-                <p className="resume-summary-name">
-                  {analysis.contact.name}
-                </p>
-
-                <p className="resume-summary-contact">
-                  {analysis.contact.email} · {analysis.contact.phone}
-                </p>
-
-                {topEducation && (
-                  <p className="resume-summary-line">
-                    <strong>Education:</strong> {topEducation.degree} in{" "}
-                    {topEducation.major}, {topEducation.institution} (
-                    {topEducation.date})
-                  </p>
-                )}
-
-                <p className="resume-summary-line">
-                  <strong>Predicted category:</strong>{" "}
-                  {analysis.classification.category} (
-                  {(analysis.classification.confidence * 100).toFixed(1)}%
-                  confidence)
-                </p>
-
-                <p className="resume-summary-meta">
-                  {analysis.metadata.word_count} words · processed in{" "}
-                  {analysis.metadata.processing_time_ms} ms
-                </p>
-              </div>
-
-              <hr className="resume-divider" />
-            </>
-          )}
-
-          <h2 className="card-title">Your matches</h2>
-
-          {!hasSearched && (
-            <p className="placeholder">
-              Results will show here after you upload your resume and click
-              “Find matching jobs”.
-            </p>
-          )}
-
-          {hasSearched && jobs.length === 0 && (
-            <p className="placeholder">No jobs found.</p>
-          )}
-
-          {jobs.length > 0 && (
-            <ul className="job-list">
-              {jobs.map((job) => (
-                <li key={job.id} className="job-card">
-                  <div className="job-main">
-                    <h3 className="job-title">{job.title}</h3>
-                    <p className="job-company">
-                      {job.company} · {job.location}
-                    </p>
-                    <p className="job-category">{job.category}</p>
-                  </div>
-
-                  <div className="job-score">
-                    <span className="job-score-value">{job.matchScore}%</span>
-                    <span className="job-score-label">Match</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
+      {/* Footer */}
+      <footer className="footer">
+        <p>© 2025 CareerMatch. Built with React & TypeScript.</p>
+      </footer>
     </div>
   );
 }
