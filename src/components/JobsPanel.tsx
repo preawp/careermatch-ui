@@ -168,48 +168,46 @@ export function JobsPanel({
           )}
         </div>
 
-        {/* Unified Filter Bar */}
-        {!isLoading && !error && (
+        {/* Unified Filter Bar - Always show if we have categories */}
+        {!error && recommendedCategories.length > 0 && (
           <div className="jobs-filters">
             {/* Category Filter */}
-            {recommendedCategories.length > 0 && (
-              <div className="filter-group">
-                <div className="filter-group-header">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span>Categories</span>
-                </div>
-                <div className="filter-pills">
+            <div className="filter-group">
+              <div className="filter-group-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span>Categories</span>
+              </div>
+              <div className="filter-pills">
+                <button
+                  className={`filter-pill ${!selectedCategory ? 'filter-pill--active' : ''}`}
+                  onClick={() => onCategoryChange(null)}
+                  disabled={isLoading}
+                >
+                  All
+                </button>
+                {recommendedCategories.slice(0, 5).map((cat, index) => (
                   <button
-                    className={`filter-pill ${!selectedCategory ? 'filter-pill--active' : ''}`}
-                    onClick={() => onCategoryChange(null)}
+                    key={cat.category}
+                    className={`filter-pill ${selectedCategory === cat.category ? 'filter-pill--active' : ''} ${index === 0 ? 'filter-pill--recommended' : ''}`}
+                    onClick={() => onCategoryChange(cat.category)}
                     disabled={isLoading}
                   >
-                    All
+                    {formatCategoryName(cat.category)}
+                    <span className="filter-pill-confidence">{cat.confidence}%</span>
+                    {index === 0 && (
+                      <svg className="filter-pill-star" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    )}
                   </button>
-                  {recommendedCategories.slice(0, 5).map((cat, index) => (
-                    <button
-                      key={cat.category}
-                      className={`filter-pill ${selectedCategory === cat.category ? 'filter-pill--active' : ''} ${index === 0 && !selectedCategory ? '' : index === 0 ? 'filter-pill--recommended' : ''}`}
-                      onClick={() => onCategoryChange(cat.category)}
-                      disabled={isLoading}
-                    >
-                      {formatCategoryName(cat.category)}
-                      <span className="filter-pill-confidence">{cat.confidence}%</span>
-                      {index === 0 && (
-                        <svg className="filter-pill-star" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
 
             {/* Results Limit */}
-            {jobs.length > 0 && (
+            {!isLoading && jobs.length > 0 && (
               <div className="filter-group filter-group--limit">
                 <div className="filter-group-header">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

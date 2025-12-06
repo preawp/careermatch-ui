@@ -74,6 +74,8 @@ function App() {
         // Store recommended categories for display
         if (jobsResponse.categories && jobsResponse.categories.length > 0) {
           setRecommendedCategories(jobsResponse.categories);
+          // Auto-select the first (best match) category
+          setSelectedCategory(jobsResponse.categories[0].category);
         }
       } catch (jobError) {
         console.error("Failed to fetch jobs:", jobError);
