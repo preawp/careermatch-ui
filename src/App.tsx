@@ -172,7 +172,18 @@ function App() {
             </div>
             CareerMatch
           </a>
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <div className="header-actions">
+            {hasResults && (
+              <button className="btn-secondary" onClick={handleUploadNew}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 16V4m0 0L8 8m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M5 16v4h14v-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Upload New
+              </button>
+            )}
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          </div>
         </div>
       </header>
 
@@ -206,7 +217,6 @@ function App() {
           onJobLimitChange={handleJobLimitChange}
           onCategoryChange={handleCategoryChange}
           onRetryJobs={handleRetryJobs}
-          onUploadNew={handleUploadNew}
         />
       ) : (
         <UploadView
@@ -218,10 +228,12 @@ function App() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="footer">
-        <p>© 2025 CareerMatch. Built with React & TypeScript.</p>
-      </footer>
+      {/* Footer - only show on upload page */}
+      {!hasResults && (
+        <footer className="footer">
+          <p>© 2025 CareerMatch. Built with React & TypeScript.</p>
+        </footer>
+      )}
     </div>
   );
 }

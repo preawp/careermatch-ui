@@ -1,7 +1,10 @@
+import { useState } from "react";
 import type { Job, CategoryMatch } from "../types/job";
 import { formatCategoryName } from "../constants/categories";
 
 export const JOB_LIMIT_OPTIONS = [5, 10, 20, 50, 100];
+
+type ViewMode = "card" | "list";
 
 interface JobsPanelProps {
   jobs: Job[];
@@ -26,6 +29,7 @@ export function JobsPanel({
   onCategoryChange,
   onRetry
 }: JobsPanelProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
   const renderContent = () => {
     if (isLoading) {
@@ -105,6 +109,52 @@ export function JobsPanel({
       );
     }
 
+    // List view - render as table
+    if (viewMode === 'list') {
+      return (
+        <div className="jobs-table-wrapper">
+          <table className="jobs-table">
+            <thead>
+              <tr>
+                <th>Job Title</th>
+                <th>Company</th>
+                <th>Location</th>
+                <th>Type</th>
+                <th>Salary</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job) => {
+                const salary = formatSalary(job.min_amount, job.max_amount, job.currency);
+                return (
+                  <tr key={job.id} className="jobs-table-row">
+                    <td className="jobs-table-title">
+                      <span className="job-title-text">{job.title}</span>
+                      {job.is_remote && <span className="job-remote-badge">Remote</span>}
+                    </td>
+                    <td className="jobs-table-company">{job.company}</td>
+                    <td className="jobs-table-location">{job.location}</td>
+                    <td className="jobs-table-type">{job.job_type ? formatJobType(job.job_type) : '—'}</td>
+                    <td className="jobs-table-salary">{salary || '—'}</td>
+                    <td className="jobs-table-action">
+                      <button
+                        className="job-view-btn"
+                        onClick={() => job.job_url && window.open(job.job_url, '_blank')}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    // Card view
     return jobs.map((job) => {
       const salary = formatSalary(job.min_amount, job.max_amount, job.currency);
       const postedDate = job.date_posted ? formatDate(job.date_posted) : null;
@@ -141,6 +191,12 @@ export function JobsPanel({
             </div>
           )}
 
+          {job.category && (
+            <div className="job-category">
+              <span className="job-category-tag">{formatCategoryName(job.category)}</span>
+            </div>
+          )}
+
           <button
             className="job-apply"
             onClick={() => job.job_url && window.open(job.job_url, '_blank')}
@@ -163,9 +219,41 @@ export function JobsPanel({
             </svg>
             Matching Jobs
           </h2>
-          {!isLoading && !error && jobs.length > 0 && (
-            <span className="jobs-count">{jobs.length} jobs found</span>
-          )}
+          <div className="jobs-header-actions">
+            {!isLoading && !error && jobs.length > 0 && (
+              <>
+                <span className="jobs-count">{jobs.length} jobs found</span>
+                <div className="view-toggle">
+                  <button
+                    className={`view-toggle-btn ${viewMode === 'card' ? 'view-toggle-btn--active' : ''}`}
+                    onClick={() => setViewMode('card')}
+                    title="Card view"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="7" rx="1" />
+                      <rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" />
+                      <rect x="14" y="14" width="7" height="7" rx="1" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`view-toggle-btn ${viewMode === 'list' ? 'view-toggle-btn--active' : ''}`}
+                    onClick={() => setViewMode('list')}
+                    title="List view"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="8" y1="6" x2="21" y2="6" />
+                      <line x1="8" y1="12" x2="21" y2="12" />
+                      <line x1="8" y1="18" x2="21" y2="18" />
+                      <line x1="3" y1="6" x2="3.01" y2="6" />
+                      <line x1="3" y1="12" x2="3.01" y2="12" />
+                      <line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Unified Filter Bar - Always show if we have categories */}
@@ -236,7 +324,7 @@ export function JobsPanel({
         )}
       </div>
 
-      <div className="jobs-list">
+      <div className={`jobs-list ${viewMode === 'list' ? 'jobs-list--list-view' : ''}`}>
         {renderContent()}
       </div>
     </div>

@@ -7,6 +7,7 @@ export interface ResumeMetadata {
 
 export interface ContactInfo {
     full_name?: string;
+    name?: string;
     email?: string;
     phone?: string;
     linkedin?: string;
