@@ -172,59 +172,76 @@ export function JobsPanel({
             Matching Jobs
           </h2>
           {!isLoading && !error && jobs.length > 0 && (
-            <span className="jobs-count">{jobs.length} jobs</span>
+            <span className="jobs-count">{jobs.length} jobs found</span>
           )}
         </div>
 
-        {/* Category Filter */}
-        {!isLoading && !error && recommendedCategories.length > 0 && (
-          <div className="jobs-filter jobs-filter--category">
-            <span className="jobs-filter-label">
-              Category:
-              {recommendedCategory && (
-                <span className="jobs-filter-recommended">
-                  Best Match: {formatCategoryName(recommendedCategory)}
-                </span>
-              )}
-            </span>
-            <div className="jobs-category-select-wrapper">
-              <select
-                className="jobs-category-select"
-                value={selectedCategory || ""}
-                onChange={(e) => onCategoryChange(e.target.value || null)}
-                disabled={isLoading}
-              >
-                <option value="">All Categories</option>
-                {recommendedCategories.map((cat) => (
-                  <option key={cat.category} value={cat.category}>
-                    {formatCategoryName(cat.category)} ({cat.confidence}%)
-                    {cat.category === recommendedCategory ? " ★" : ""}
-                  </option>
-                ))}
-              </select>
-              <svg className="jobs-category-select-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </div>
-          </div>
-        )}
+        {/* Unified Filter Bar */}
+        {!isLoading && !error && (
+          <div className="jobs-filters">
+            {/* Category Pills */}
+            {recommendedCategories.length > 0 && (
+              <div className="filter-group">
+                <div className="filter-group-header">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 7h16M4 12h16M4 17h10" />
+                  </svg>
+                  <span>Categories</span>
+                </div>
+                <div className="filter-pills">
+                  <button
+                    className={`filter-pill ${!selectedCategory ? 'filter-pill--active' : ''}`}
+                    onClick={() => onCategoryChange(null)}
+                    disabled={isLoading}
+                  >
+                    All
+                  </button>
+                  {recommendedCategories.map((cat) => (
+                    <button
+                      key={cat.category}
+                      className={`filter-pill ${selectedCategory === cat.category ? 'filter-pill--active' : ''} ${cat.category === recommendedCategory ? 'filter-pill--recommended' : ''}`}
+                      onClick={() => onCategoryChange(cat.category)}
+                      disabled={isLoading}
+                    >
+                      {formatCategoryName(cat.category)}
+                      <span className="filter-pill-confidence">{cat.confidence}%</span>
+                      {cat.category === recommendedCategory && (
+                        <svg className="filter-pill-star" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Limit Filter */}
-        {!isLoading && !error && jobs.length > 0 && (
-          <div className="jobs-filter">
-            <span className="jobs-filter-label">Show:</span>
-            <div className="jobs-filter-options">
-              {JOB_LIMIT_OPTIONS.map((limit) => (
-                <button
-                  key={limit}
-                  className={`jobs-filter-btn ${jobLimit === limit ? 'jobs-filter-btn--active' : ''}`}
-                  onClick={() => onJobLimitChange(limit)}
-                  disabled={isLoading}
-                >
-                  {limit}
-                </button>
-              ))}
-            </div>
+            {/* Results Limit */}
+            {jobs.length > 0 && (
+              <div className="filter-group filter-group--limit">
+                <div className="filter-group-header">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                  </svg>
+                  <span>Results</span>
+                </div>
+                <div className="filter-pills filter-pills--compact">
+                  {JOB_LIMIT_OPTIONS.map((limit) => (
+                    <button
+                      key={limit}
+                      className={`filter-pill filter-pill--small ${jobLimit === limit ? 'filter-pill--active' : ''}`}
+                      onClick={() => onJobLimitChange(limit)}
+                      disabled={isLoading}
+                    >
+                      {limit}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
