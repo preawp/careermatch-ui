@@ -1,5 +1,5 @@
-import type { Job } from "../types/job";
-import { JOB_CATEGORIES, formatCategoryName } from "../constants/categories";
+import type { Job, CategoryMatch } from "../types/job";
+import { formatCategoryName } from "../constants/categories";
 
 export const JOB_LIMIT_OPTIONS = [5, 10, 20, 50, 100];
 
@@ -10,6 +10,7 @@ interface JobsPanelProps {
   jobLimit: number;
   selectedCategory: string | null;
   recommendedCategory: string | null;
+  recommendedCategories: CategoryMatch[];
   onJobLimitChange: (limit: number) => void;
   onCategoryChange: (category: string | null) => void;
   onRetry?: () => void;
@@ -22,6 +23,7 @@ export function JobsPanel({
   jobLimit,
   selectedCategory,
   recommendedCategory,
+  recommendedCategories,
   onJobLimitChange,
   onCategoryChange,
   onRetry
@@ -173,15 +175,15 @@ export function JobsPanel({
             <span className="jobs-count">{jobs.length} jobs</span>
           )}
         </div>
-        
+
         {/* Category Filter */}
-        {!isLoading && !error && (
+        {!isLoading && !error && recommendedCategories.length > 0 && (
           <div className="jobs-filter jobs-filter--category">
             <span className="jobs-filter-label">
               Category:
               {recommendedCategory && (
                 <span className="jobs-filter-recommended">
-                  Recommended: {formatCategoryName(recommendedCategory)}
+                  Best Match: {formatCategoryName(recommendedCategory)}
                 </span>
               )}
             </span>
@@ -193,10 +195,10 @@ export function JobsPanel({
                 disabled={isLoading}
               >
                 <option value="">All Categories</option>
-                {JOB_CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {formatCategoryName(cat.name)}
-                    {cat.name === recommendedCategory ? " ★" : ""}
+                {recommendedCategories.map((cat) => (
+                  <option key={cat.category} value={cat.category}>
+                    {formatCategoryName(cat.category)} ({cat.confidence}%)
+                    {cat.category === recommendedCategory ? " ★" : ""}
                   </option>
                 ))}
               </select>

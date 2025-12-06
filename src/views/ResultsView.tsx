@@ -1,5 +1,5 @@
 import type { ResumeSections } from "../types/resume";
-import type { Job } from "../types/job";
+import type { Job, CategoryMatch } from "../types/job";
 import { ResumeCard } from "../components/ResumeCard";
 import { JobsPanel } from "../components/JobsPanel";
 
@@ -11,6 +11,7 @@ interface ResultsViewProps {
     jobLimit: number;
     selectedCategory: string | null;
     recommendedCategory: string | null;
+    recommendedCategories: CategoryMatch[];
     onJobLimitChange: (limit: number) => void;
     onCategoryChange: (category: string | null) => void;
     onRetryJobs?: () => void;
@@ -25,6 +26,7 @@ export function ResultsView({
     jobLimit,
     selectedCategory,
     recommendedCategory,
+    recommendedCategories,
     onJobLimitChange,
     onCategoryChange,
     onRetryJobs,
@@ -54,6 +56,7 @@ export function ResultsView({
                     jobLimit={jobLimit}
                     selectedCategory={selectedCategory}
                     recommendedCategory={recommendedCategory}
+                    recommendedCategories={recommendedCategories}
                     onJobLimitChange={onJobLimitChange}
                     onCategoryChange={onCategoryChange}
                     onRetry={onRetryJobs}

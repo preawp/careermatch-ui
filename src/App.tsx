@@ -7,7 +7,7 @@ import { Toast, ThemeToggle } from "./components";
 import { UploadView, ResultsView } from "./views";
 import { useTheme } from "./hooks/useTheme";
 import type { ResumeSections } from "./types/resume";
-import type { Job } from "./types/job";
+import type { Job, CategoryMatch } from "./types/job";
 
 interface ToastState {
   message: string;
@@ -25,6 +25,7 @@ function App() {
   const [jobLimit, setJobLimit] = useState<number>(10);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [recommendedCategory, setRecommendedCategory] = useState<string | null>(null);
+  const [recommendedCategories, setRecommendedCategories] = useState<CategoryMatch[]>([]);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = useCallback(
@@ -71,8 +72,12 @@ function App() {
       try {
         const jobsResponse = await fetchMatchingJobs(resumeFile, jobLimit);
         setJobs(jobsResponse.jobs ?? []);
-        // Set the recommended category from the API response
-        if (jobsResponse.category) {
+        // Set the recommended categories from the API response
+        if (jobsResponse.categories && jobsResponse.categories.length > 0) {
+          setRecommendedCategories(jobsResponse.categories);
+          setRecommendedCategory(jobsResponse.categories[0].category);
+          setSelectedCategory(jobsResponse.categories[0].category);
+        } else if (jobsResponse.category) {
           setRecommendedCategory(jobsResponse.category);
           setSelectedCategory(jobsResponse.category);
         }
@@ -118,6 +123,7 @@ function App() {
     setJobsError(null);
     setSelectedCategory(null);
     setRecommendedCategory(null);
+    setRecommendedCategories([]);
   };
 
   const fetchJobs = useCallback(async (limit: number, category?: string | null) => {
@@ -206,6 +212,7 @@ function App() {
           jobLimit={jobLimit}
           selectedCategory={selectedCategory}
           recommendedCategory={recommendedCategory}
+          recommendedCategories={recommendedCategories}
           onJobLimitChange={handleJobLimitChange}
           onCategoryChange={handleCategoryChange}
           onRetryJobs={handleRetryJobs}
