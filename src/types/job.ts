@@ -14,9 +14,16 @@ export interface Job {
     job_url?: string;
 }
 
+export interface CategoryMatch {
+    category: string;
+    confidence: number;
+}
+
 export interface JobsResponse {
     success?: boolean;
     jobs?: Job[];
     message?: string;
     count?: number;
+    category?: string;
+    categories?: CategoryMatch[];
 }

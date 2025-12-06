@@ -9,7 +9,10 @@ interface ResultsViewProps {
     isLoadingJobs: boolean;
     jobsError?: string | null;
     jobLimit: number;
+    selectedCategory: string | null;
+    recommendedCategory: string | null;
     onJobLimitChange: (limit: number) => void;
+    onCategoryChange: (category: string | null) => void;
     onRetryJobs?: () => void;
     onUploadNew: () => void;
 }
@@ -20,7 +23,10 @@ export function ResultsView({
     isLoadingJobs,
     jobsError,
     jobLimit,
+    selectedCategory,
+    recommendedCategory,
     onJobLimitChange,
+    onCategoryChange,
     onRetryJobs,
     onUploadNew
 }: ResultsViewProps) {
@@ -46,7 +52,10 @@ export function ResultsView({
                     isLoading={isLoadingJobs}
                     error={jobsError}
                     jobLimit={jobLimit}
+                    selectedCategory={selectedCategory}
+                    recommendedCategory={recommendedCategory}
                     onJobLimitChange={onJobLimitChange}
+                    onCategoryChange={onCategoryChange}
                     onRetry={onRetryJobs}
                 />
             </div>

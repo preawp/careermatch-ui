@@ -1,4 +1,5 @@
 import type { Job } from "../types/job";
+import { JOB_CATEGORIES, formatCategoryName } from "../constants/categories";
 
 export const JOB_LIMIT_OPTIONS = [5, 10, 20, 50, 100];
 
@@ -7,7 +8,10 @@ interface JobsPanelProps {
   isLoading?: boolean;
   error?: string | null;
   jobLimit: number;
+  selectedCategory: string | null;
+  recommendedCategory: string | null;
   onJobLimitChange: (limit: number) => void;
+  onCategoryChange: (category: string | null) => void;
   onRetry?: () => void;
 }
 
@@ -16,7 +20,10 @@ export function JobsPanel({
   isLoading = false,
   error = null,
   jobLimit,
+  selectedCategory,
+  recommendedCategory,
   onJobLimitChange,
+  onCategoryChange,
   onRetry
 }: JobsPanelProps) {
 
@@ -99,7 +106,6 @@ export function JobsPanel({
     }
 
     return jobs.map((job) => {
-      const matchPercent = Math.round(job.score * 100);
       const salary = formatSalary(job.min_amount, job.max_amount, job.currency);
       const postedDate = job.date_posted ? formatDate(job.date_posted) : null;
 
@@ -109,9 +115,6 @@ export function JobsPanel({
             <div className="job-info">
               <h3 className="job-title">{job.title}</h3>
               <p className="job-company">{job.company}</p>
-            </div>
-            <div className={`job-match ${getMatchClass(matchPercent)}`}>
-              {matchPercent}%
             </div>
           </div>
 
@@ -140,7 +143,7 @@ export function JobsPanel({
 
           {job.category && (
             <div className="job-category">
-              <span className="job-category-tag">{formatCategory(job.category)}</span>
+              <span className="job-category-tag">{formatCategoryName(job.category)}</span>
             </div>
           )}
 
@@ -170,6 +173,41 @@ export function JobsPanel({
             <span className="jobs-count">{jobs.length} jobs</span>
           )}
         </div>
+        
+        {/* Category Filter */}
+        {!isLoading && !error && (
+          <div className="jobs-filter jobs-filter--category">
+            <span className="jobs-filter-label">
+              Category:
+              {recommendedCategory && (
+                <span className="jobs-filter-recommended">
+                  Recommended: {formatCategoryName(recommendedCategory)}
+                </span>
+              )}
+            </span>
+            <div className="jobs-category-select-wrapper">
+              <select
+                className="jobs-category-select"
+                value={selectedCategory || ""}
+                onChange={(e) => onCategoryChange(e.target.value || null)}
+                disabled={isLoading}
+              >
+                <option value="">All Categories</option>
+                {JOB_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {formatCategoryName(cat.name)}
+                    {cat.name === recommendedCategory ? " ★" : ""}
+                  </option>
+                ))}
+              </select>
+              <svg className="jobs-category-select-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Limit Filter */}
         {!isLoading && !error && jobs.length > 0 && (
           <div className="jobs-filter">
             <span className="jobs-filter-label">Show:</span>
@@ -194,12 +232,6 @@ export function JobsPanel({
       </div>
     </div>
   );
-}
-
-function getMatchClass(score: number): string {
-  if (score >= 90) return "job-match--excellent";
-  if (score >= 75) return "job-match--good";
-  return "job-match--fair";
 }
 
 function formatSalary(min?: number | null, max?: number | null, currency?: string): string | null {
@@ -232,12 +264,4 @@ function formatJobType(type: string): string {
     .map(t => t.trim())
     .map(t => t.charAt(0).toUpperCase() + t.slice(1))
     .join(' / ');
-}
-
-function formatCategory(category: string): string {
-  return category
-    .toLowerCase()
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
 }

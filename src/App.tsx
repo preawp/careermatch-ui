@@ -23,6 +23,8 @@ function App() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [jobsError, setJobsError] = useState<string | null>(null);
   const [jobLimit, setJobLimit] = useState<number>(10);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [recommendedCategory, setRecommendedCategory] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = useCallback(
@@ -69,6 +71,11 @@ function App() {
       try {
         const jobsResponse = await fetchMatchingJobs(resumeFile, jobLimit);
         setJobs(jobsResponse.jobs ?? []);
+        // Set the recommended category from the API response
+        if (jobsResponse.category) {
+          setRecommendedCategory(jobsResponse.category);
+          setSelectedCategory(jobsResponse.category);
+        }
       } catch (jobError) {
         console.error("Failed to fetch jobs:", jobError);
         setJobs([]);
@@ -109,16 +116,22 @@ function App() {
     setSections(null);
     setJobs([]);
     setJobsError(null);
+    setSelectedCategory(null);
+    setRecommendedCategory(null);
   };
 
-  const fetchJobs = useCallback(async (limit: number) => {
+  const fetchJobs = useCallback(async (limit: number, category?: string | null) => {
     if (!resumeFile) return;
 
     setIsLoadingJobs(true);
     setJobsError(null);
     try {
-      const jobsResponse = await fetchMatchingJobs(resumeFile, limit);
+      const jobsResponse = await fetchMatchingJobs(resumeFile, limit, category || undefined);
       setJobs(jobsResponse.jobs ?? []);
+      // Update recommended category if returned
+      if (jobsResponse.category && !recommendedCategory) {
+        setRecommendedCategory(jobsResponse.category);
+      }
     } catch (jobError) {
       console.error("Failed to fetch jobs:", jobError);
       setJobs([]);
@@ -130,16 +143,21 @@ function App() {
     } finally {
       setIsLoadingJobs(false);
     }
-  }, [resumeFile]);
+  }, [resumeFile, recommendedCategory]);
 
   const handleRetryJobs = useCallback(() => {
-    fetchJobs(jobLimit);
-  }, [fetchJobs, jobLimit]);
+    fetchJobs(jobLimit, selectedCategory);
+  }, [fetchJobs, jobLimit, selectedCategory]);
 
   const handleJobLimitChange = useCallback((newLimit: number) => {
     setJobLimit(newLimit);
-    fetchJobs(newLimit);
-  }, [fetchJobs]);
+    fetchJobs(newLimit, selectedCategory);
+  }, [fetchJobs, selectedCategory]);
+
+  const handleCategoryChange = useCallback((category: string | null) => {
+    setSelectedCategory(category);
+    fetchJobs(jobLimit, category);
+  }, [fetchJobs, jobLimit]);
 
   return (
     <div className="app">
@@ -186,7 +204,10 @@ function App() {
           isLoadingJobs={isLoadingJobs}
           jobsError={jobsError}
           jobLimit={jobLimit}
+          selectedCategory={selectedCategory}
+          recommendedCategory={recommendedCategory}
           onJobLimitChange={handleJobLimitChange}
+          onCategoryChange={handleCategoryChange}
           onRetryJobs={handleRetryJobs}
           onUploadNew={handleUploadNew}
         />
